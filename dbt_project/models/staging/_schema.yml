@@ -105,3 +105,53 @@ sources:
             description: "Retail price."
           - name: P_COMMENT
             description: "Free-text comment."
+
+models:
+  - name: stg_tpch__orders
+    description: "Staged orders — renamed and typed columns from TPCH_SF1.ORDERS."
+    columns:
+      - name: order_key
+        description: "Primary key."
+      - name: customer_key
+        description: "Foreign key to stg_tpch__customers."
+      - name: status
+        description: "Order status."
+      - name: total_price
+      - name: order_date
+      - name: priority
+      - name: clerk
+      - name: ship_priority
+
+  - name: stg_tpch__customers
+    description: "Staged customers — renamed and typed columns from TPCH_SF1.CUSTOMER."
+    columns:
+      - name: customer_key
+        description: "Primary key."
+      - name: name
+      - name: nation_key
+      - name: account_balance
+      - name: market_segment
+
+  - name: stg_tpch__lineitems
+    description: "Staged line items — renamed and typed columns from TPCH_SF1.LINEITEM."
+    columns:
+      - name: order_key
+        description: "Foreign key to stg_tpch__orders."
+      - name: part_key
+      - name: line_number
+      - name: quantity
+      - name: extended_price
+      - name: return_flag
+      - name: line_status
+      - name: ship_date
+      - name: ship_mode
+
+  - name: stg_tpch__parts
+    description: "Staged parts — renamed and typed columns from TPCH_SF1.PART."
+    columns:
+      - name: part_key
+        description: "Primary key."
+      - name: name
+      - name: manufacturer
+      - name: brand
+      - name: retail_price
