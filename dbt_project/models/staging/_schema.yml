@@ -1,0 +1,157 @@
+version: 2
+
+sources:
+  - name: tpch
+    database: SNOWFLAKE_SAMPLE_DATA
+    schema: TPCH_SF1
+    description: "TPC-H SF1 sample dataset — read-only source, never write here."
+    tables:
+      - name: orders
+        description: "Customer orders."
+        columns:
+          - name: O_ORDERKEY
+            description: "Primary key."
+          - name: O_CUSTKEY
+            description: "Foreign key to customer."
+          - name: O_ORDERSTATUS
+            description: "Order status: O (open), F (fulfilled), P (partial)."
+          - name: O_TOTALPRICE
+            description: "Total order price."
+          - name: O_ORDERDATE
+            description: "Date order was placed."
+          - name: O_ORDERPRIORITY
+            description: "Order priority tier."
+          - name: O_CLERK
+            description: "Clerk who handled the order."
+          - name: O_SHIPPRIORITY
+            description: "Shipping priority flag."
+          - name: O_COMMENT
+            description: "Free-text comment."
+
+      - name: customer
+        description: "Customer master data."
+        columns:
+          - name: C_CUSTKEY
+            description: "Primary key."
+          - name: C_NAME
+            description: "Customer name."
+          - name: C_ADDRESS
+            description: "Street address."
+          - name: C_NATIONKEY
+            description: "Foreign key to nation."
+          - name: C_PHONE
+            description: "Phone number."
+          - name: C_ACCTBAL
+            description: "Account balance."
+          - name: C_MKTSEGMENT
+            description: "Market segment."
+          - name: C_COMMENT
+            description: "Free-text comment."
+
+      - name: lineitem
+        description: "Line items for each order."
+        columns:
+          - name: L_ORDERKEY
+            description: "Foreign key to orders."
+          - name: L_PARTKEY
+            description: "Foreign key to part."
+          - name: L_SUPPKEY
+            description: "Foreign key to supplier."
+          - name: L_LINENUMBER
+            description: "Line number within the order."
+          - name: L_QUANTITY
+            description: "Quantity ordered."
+          - name: L_EXTENDEDPRICE
+            description: "Extended price (quantity × unit price)."
+          - name: L_DISCOUNT
+            description: "Discount fraction applied."
+          - name: L_TAX
+            description: "Tax fraction applied."
+          - name: L_RETURNFLAG
+            description: "Return flag: A (accepted), R (returned), N (none)."
+          - name: L_LINESTATUS
+            description: "Line status: O (open), F (fulfilled)."
+          - name: L_SHIPDATE
+            description: "Date item was shipped."
+          - name: L_COMMITDATE
+            description: "Committed delivery date."
+          - name: L_RECEIPTDATE
+            description: "Date item was received."
+          - name: L_SHIPINSTRUCT
+            description: "Shipping instructions."
+          - name: L_SHIPMODE
+            description: "Shipping mode (e.g. AIR, TRUCK, MAIL)."
+          - name: L_COMMENT
+            description: "Free-text comment."
+
+      - name: part
+        description: "Parts catalog."
+        columns:
+          - name: P_PARTKEY
+            description: "Primary key."
+          - name: P_NAME
+            description: "Part name."
+          - name: P_MFGR
+            description: "Manufacturer."
+          - name: P_BRAND
+            description: "Brand."
+          - name: P_TYPE
+            description: "Part type."
+          - name: P_SIZE
+            description: "Part size."
+          - name: P_CONTAINER
+            description: "Container type."
+          - name: P_RETAILPRICE
+            description: "Retail price."
+          - name: P_COMMENT
+            description: "Free-text comment."
+
+models:
+  - name: stg_tpch__orders
+    description: "Staged orders — renamed and typed columns from TPCH_SF1.ORDERS."
+    columns:
+      - name: order_key
+        description: "Primary key."
+      - name: customer_key
+        description: "Foreign key to stg_tpch__customers."
+      - name: status
+        description: "Order status."
+      - name: total_price
+      - name: order_date
+      - name: priority
+      - name: clerk
+      - name: ship_priority
+
+  - name: stg_tpch__customers
+    description: "Staged customers — renamed and typed columns from TPCH_SF1.CUSTOMER."
+    columns:
+      - name: customer_key
+        description: "Primary key."
+      - name: name
+      - name: nation_key
+      - name: account_balance
+      - name: market_segment
+
+  - name: stg_tpch__lineitems
+    description: "Staged line items — renamed and typed columns from TPCH_SF1.LINEITEM."
+    columns:
+      - name: order_key
+        description: "Foreign key to stg_tpch__orders."
+      - name: part_key
+      - name: line_number
+      - name: quantity
+      - name: extended_price
+      - name: return_flag
+      - name: line_status
+      - name: ship_date
+      - name: ship_mode
+
+  - name: stg_tpch__parts
+    description: "Staged parts — renamed and typed columns from TPCH_SF1.PART."
+    columns:
+      - name: part_key
+        description: "Primary key."
+      - name: name
+      - name: manufacturer
+      - name: brand
+      - name: retail_price

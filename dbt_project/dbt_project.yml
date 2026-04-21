@@ -1,0 +1,28 @@
+name: snowflake_ai_evaluation
+version: "1.0.0"
+config-version: 2
+
+profile: snowflake_ai_evaluation
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  snowflake_ai_evaluation:
+    staging:
+      +materialized: view
+      +schema: STAGING
+    intermediate:
+      +materialized: table
+    marts:
+      +materialized: table
+      +schema: MARTS
+
+seeds:
+  snowflake_ai_evaluation:
+    golden_test_suites:
+      +schema: EVALUATION
