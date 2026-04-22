@@ -12,6 +12,69 @@ sources:
 models:
   - name: mart_customer_support_context
     description: "Agent-ready context table. One row per order+line-item enriched with customer profile."
+    columns:
+      - name: order_key
+        description: "Order identifier."
+      - name: customer_key
+        description: "Customer identifier."
+      - name: customer_name
+        description: "Customer full name."
+      - name: customer_phone
+        description: "Customer contact phone."
+      - name: customer_account_balance
+        description: "Current account balance."
+      - name: market_segment
+        description: "Customer market segment (e.g. AUTOMOBILE, BUILDING)."
+      - name: order_status
+        description: "Order status code (O=open, F=fulfilled, P=pending)."
+      - name: order_date
+      - name: order_total_price
+      - name: order_priority
+      - name: line_number
+        description: "Line item number within the order."
+      - name: part_key
+      - name: part_name
+      - name: part_brand
+      - name: part_type
+      - name: quantity
+      - name: extended_price
+      - name: discount
+      - name: net_price
+        description: "extended_price * (1 - discount), rounded to 2dp."
+      - name: return_flag
+      - name: line_status
+      - name: ship_date
+      - name: commit_date
+      - name: receipt_date
+      - name: ship_mode
+      - name: ship_instructions
+      - name: transit_days
+        description: "Days between ship_date and receipt_date."
+      - name: customer_total_orders
+      - name: customer_total_spend
+      - name: customer_avg_order_value
+      - name: customer_first_order_date
+      - name: customer_latest_order_date
+      - name: customer_open_orders
+      - name: customer_fulfilled_orders
 
   - name: mart_eval_results_summary
     description: "Aggregated eval results per run read by Streamlit."
+    columns:
+      - name: run_id
+        description: "Unique identifier for the evaluation run."
+      - name: run_timestamp
+        description: "When the evaluation run started."
+      - name: rubric_id
+        description: "Which scoring rubric was applied."
+      - name: total_questions
+        description: "Number of golden questions evaluated."
+      - name: passed_questions
+        description: "Questions where score >= threshold."
+      - name: pass_rate
+        description: "passed_questions / total_questions."
+      - name: avg_score
+      - name: p90_score
+        description: "90th-percentile score for the run."
+      - name: min_score
+      - name: max_score
