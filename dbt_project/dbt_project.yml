@@ -17,7 +17,7 @@ models:
       +materialized: view
       +schema: STAGING
     intermediate:
-      +materialized: table
+      +materialized: ephemeral
     marts:
       +materialized: table
       +schema: MARTS
