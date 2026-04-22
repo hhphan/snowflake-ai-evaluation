@@ -15,7 +15,11 @@ models:
     columns:
       - name: order_key
         description: "Order identifier — primary lookup key for the agent."
+        data_tests:
+          - not_null
       - name: customer_key
+        data_tests:
+          - not_null
       - name: customer_name
       - name: customer_phone
       - name: market_segment
@@ -36,7 +40,12 @@ models:
     columns:
       - name: run_id
         description: "UUID for the evaluation run."
+        data_tests:
+          - not_null
+          - unique
       - name: run_timestamp
+        data_tests:
+          - not_null
       - name: total_questions
       - name: pass_count
       - name: fail_count
