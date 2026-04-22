@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: evaluation
+    database: ANALYTICS_DB
+    schema: EVALUATION
+    description: "Evaluation pipeline outputs."
+    tables:
+      - name: eval_results
+        description: "One row per question per evaluation run."
+
+models:
+  - name: mart_customer_support_context
+    description: "Agent-ready context table. One row per order+line-item enriched with customer profile."
+
+  - name: mart_eval_results_summary
+    description: "Aggregated eval results per run read by Streamlit."
