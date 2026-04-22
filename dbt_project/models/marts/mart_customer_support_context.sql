@@ -50,4 +50,4 @@ select
     cs.fulfilled_orders             as customer_fulfilled_orders
 from order_details od
 inner join customers       c  on od.customer_key = c.customer_key
-inner join customer_summary cs on od.order_key = cs.customer_key
+inner join customer_summary cs on od.customer_key = cs.customer_key
