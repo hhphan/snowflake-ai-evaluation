@@ -3,6 +3,32 @@ version: 2
 models:
   - name: int_order_details
     description: "Order-level detail: each row is one line item enriched with order and part info."
+    columns:
+      - name: order_key
+        description: "Foreign key to stg_tpch__orders."
+      - name: customer_key
+        description: "Foreign key to stg_tpch__customers."
+      - name: order_status
+      - name: order_date
+      - name: order_total_price
+      - name: order_priority
+      - name: line_number
+      - name: part_key
+      - name: part_name
+      - name: part_brand
+      - name: part_type
+      - name: quantity
+      - name: extended_price
+      - name: discount
+      - name: net_price
+      - name: return_flag
+      - name: line_status
+      - name: ship_date
+      - name: commit_date
+      - name: receipt_date
+      - name: ship_mode
+      - name: ship_instructions
+      - name: transit_days
 
   - name: int_customer_order_summary
     description: "One row per customer with aggregated order statistics."
