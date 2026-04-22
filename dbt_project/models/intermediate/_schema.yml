@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: int_order_details
+    description: "Order-level detail: each row is one line item enriched with order and part info."
+
+  - name: int_customer_order_summary
+    description: "One row per customer with aggregated order statistics."
