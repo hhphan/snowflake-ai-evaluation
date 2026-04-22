@@ -35,5 +35,5 @@ select
     l.ship_instructions,
     datediff('day', l.ship_date, l.receipt_date)         as transit_days
 from orders o
-inner join lineitems l on o.order_key = l.order_id
+inner join lineitems l on o.order_key = l.order_key
 inner join parts     p on l.part_key  = p.part_key
