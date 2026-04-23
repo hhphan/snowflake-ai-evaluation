@@ -4,6 +4,7 @@ import yaml
 import snowflake.connector
 from pathlib import Path
 from snowflake.connector import SnowflakeConnection
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PrivateFormat, NoEncryption
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,10 +42,21 @@ def get_connection() -> SnowflakeConnection:
     if _connection is None or _connection.is_closed():
         logger.info("Opening Snowflake connection.")
         c = _load_dbt_credentials()
+        auth: dict = {}
+        if "private_key_path" in c:
+            with open(c["private_key_path"], "rb") as f:
+                private_key = load_pem_private_key(f.read(), password=None)
+            auth["private_key"] = private_key.private_bytes(
+                encoding=Encoding.DER,
+                format=PrivateFormat.PKCS8,
+                encryption_algorithm=NoEncryption(),
+            )
+        else:
+            auth["password"] = c["password"]
         _connection = snowflake.connector.connect(
             account=c["account"],
             user=c["user"],
-            password=c["password"],
+            **auth,
             role=c.get("role", "SYSADMIN"),
             database=c.get("database", "ANALYTICS_DB"),
             warehouse=c.get("warehouse", "TRANSFORM_WH"),
