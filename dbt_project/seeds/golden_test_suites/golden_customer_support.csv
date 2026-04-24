@@ -3,3 +3,9 @@ question,expected_theme,rubric_id
 "When was order 3 shipped?",shipping_info,shipping_accuracy
 "What items are included in order 5?",order_items,item_detail_accuracy
 "What is the total cost of order 9?",order_pricing,pricing_accuracy
+"Is order 2 fulfilled or still open?",order_status,status_accuracy
+"What shipping mode was used for order 4?",shipping_info,shipping_accuracy
+"What parts were ordered in order 7?",order_items,item_detail_accuracy
+"What is the total price of order 32?",order_pricing,pricing_accuracy
+"Who is the customer for order 6 and where are they from?",customer_info,detail_accuracy
+"When was order 35 placed?",order_detail,detail_accuracy
