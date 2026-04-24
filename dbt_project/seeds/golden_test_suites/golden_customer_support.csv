@@ -1,0 +1,5 @@
+question,expected_theme,rubric_id
+"What is the current status of order 1?",order_status,status_accuracy
+"When was order 3 shipped?",shipping_info,shipping_accuracy
+"What items are included in order 5?",order_items,item_detail_accuracy
+"What is the total cost of order 9?",order_pricing,pricing_accuracy
