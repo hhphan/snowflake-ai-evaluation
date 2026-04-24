@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 _GOLDEN_QUERY = """
 SELECT question, expected_theme, rubric_id
-FROM ANALYTICS_DB.EVALUATION.GOLDEN_CUSTOMER_SUPPORT_SUITE
+FROM ANALYTICS_DB.EVALUATION.GOLDEN_CUSTOMER_SUPPORT
 ORDER BY question
 """
 
