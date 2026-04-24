@@ -1,6 +1,14 @@
 import os
 import re
+import warnings
 import yaml
+
+warnings.filterwarnings(
+    "ignore",
+    message=".*doesn't match a supported version",
+    category=Warning,
+)
+
 import snowflake.connector
 from pathlib import Path
 from snowflake.connector import SnowflakeConnection
