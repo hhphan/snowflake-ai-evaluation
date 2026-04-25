@@ -16,6 +16,11 @@ if page == "Chat":
     st.title("Customer Support Agent")
     st.caption("Ask questions about orders — e.g. 'What is the status of order 1?'")
 
+    from src.agent.registry import AGENT_REGISTRY
+    agent_choice = st.sidebar.selectbox(
+        "Agent", options=list(AGENT_REGISTRY.keys()), index=0
+    )
+
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -29,9 +34,9 @@ if page == "Chat":
             st.write(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Looking up order details..."):
-                from src.agent.graph import app
-                result = app.invoke(
+            with st.spinner(f"[{agent_choice}] Looking up order details..."):
+                from src.agent.graph import build_graph
+                result = build_graph(agent_choice).invoke(
                     {"messages": [HumanMessage(content=prompt)]}
                 )
                 answer = result["messages"][-1].content
@@ -57,6 +62,12 @@ else:
         else:
             df = pd.DataFrame(rows)
             df.columns = [c.lower() for c in df.columns]
+
+            # agent filter
+            agents = sorted(df["agent_name"].unique())
+            selected_agent = st.sidebar.selectbox("Filter by agent", ["All"] + agents)
+            if selected_agent != "All":
+                df = df[df["agent_name"] == selected_agent]
 
             # summary cards for the latest row
             latest = df.iloc[0]
