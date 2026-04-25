@@ -18,7 +18,7 @@ AGENT_REGISTRY: dict[str, callable] = {
         model=os.getenv("OPENAI_MODEL", "gpt-4o"), temperature=0
     ),
     "gemini": lambda: ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"), temperature=0
+        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), temperature=0
     ),
     # "claude": lambda: ChatAnthropic(model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"), temperature=0),
 }
