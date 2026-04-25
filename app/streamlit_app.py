@@ -11,7 +11,7 @@ st.set_page_config(page_title="Snowflake AI Evaluation", layout="wide")
 
 page = st.sidebar.radio("Navigation", ["Chat", "Evaluation Dashboard"])
 
-# chat page
+# ── Chat page ──────────────────────────────────────────────────────────────────
 if page == "Chat":
     st.title("Customer Support Agent")
     st.caption("Ask questions about orders — e.g. 'What is the status of order 1?'")
@@ -31,13 +31,15 @@ if page == "Chat":
         with st.chat_message("assistant"):
             with st.spinner("Looking up order details..."):
                 from src.agent.graph import app
-                result = app.invoke({"messages": [HumanMessage(content=prompt)]})
+                result = app.invoke(
+                    {"messages": [HumanMessage(content=prompt)]}
+                )
                 answer = result["messages"][-1].content
             st.write(answer)
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
-# eval dashboard
+# ── Evaluation Dashboard ───────────────────────────────────────────────────────
 else:
     st.title("Evaluation Dashboard")
     st.caption("Golden suite pass/fail results by evaluation run.")
@@ -56,24 +58,27 @@ else:
             df = pd.DataFrame(rows)
             df.columns = [c.lower() for c in df.columns]
 
-            # Summary cards for the latest run
+            # summary cards for the latest row
             latest = df.iloc[0]
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
-            c2.metric("P90 Score", f"{latest['p90_score']:.2f}")
-            c3.metric("Avg Score", f"{latest['avg_score']:.2f}")
-            c4.metric("Questions", int(latest["total_questions"]))
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("Agent", latest["agent_name"])
+            c2.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
+            c3.metric("P90 Score", f"{latest['p90_score']:.2f}")
+            c4.metric("Avg Score", f"{latest['avg_score']:.2f}")
+            c5.metric("Questions", int(latest["total_questions"]))
 
             st.divider()
             st.subheader("All Runs")
             st.dataframe(
-                df[["run_timestamp", "total_questions", "pass_rate", "avg_score", "p90_score", "pass_count", "fail_count"]],
+                df[["run_timestamp", "agent_name", "total_questions",
+                    "pass_rate", "avg_score", "p90_score", "pass_count", "fail_count"]],
                 use_container_width=True,
             )
 
             st.subheader("Pass Rate Over Time")
-            chart_df = df[["run_timestamp", "pass_rate"]].sort_values("run_timestamp")
-            st.line_chart(chart_df.set_index("run_timestamp")["pass_rate"])
+            chart_df = df[["run_timestamp", "agent_name", "pass_rate"]].sort_values("run_timestamp")
+            pivot = chart_df.pivot(index="run_timestamp", columns="agent_name", values="pass_rate")
+            st.line_chart(pivot)
 
     except Exception as e:
         st.error(f"Could not load evaluation results: {e}")
