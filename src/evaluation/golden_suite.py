@@ -26,9 +26,10 @@ def load_golden_suite() -> list[dict]:
     ]
 
 
-def run_agent_on_question(question: str) -> str:
+def run_agent_on_question(question: str, agent_name: str | None = None) -> str:
     """Run the LangGraph agent on a single question and return its final text response."""
-    from src.agent.graph import app
+    from src.agent.graph import build_graph
 
-    result = app.invoke({"messages": [HumanMessage(content=question)]})
+    graph = build_graph(agent_name)
+    result = graph.invoke({"messages": [HumanMessage(content=question)]})
     return result["messages"][-1].content
