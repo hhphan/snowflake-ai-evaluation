@@ -2,7 +2,7 @@
 
 An end-to-end AI agent evaluation pipeline using Snowflake TPC-H data, dbt, LangGraph, and the Claude API. Demonstrates how to build trustworthy evaluation pipelines for LLM-powered agents.
 
-**Stack:** dbt · Snowflake · LangGraph · OpenAI API (agent) · Claude API (evaluator) · Streamlit · Python 3.11+
+**Stack:** dbt · Snowflake · LangGraph · OpenAI API (agent) · Gemini API (agent) · Claude API (evaluator) · Streamlit · Python 3.11+
 
 ---
 
@@ -18,7 +18,8 @@ dbt Transform Layer
         │
         ▼
 LangGraph Agent  (src/agent/)
-  Queries mart tables · Answers customer support questions via Claude API
+  Queries mart tables · Answers customer support questions via OpenAI or Gemini
+  Swap agents with --agent openai | gemini
         │
         ▼
 Evaluation Pipeline  (src/evaluation/)
@@ -35,7 +36,9 @@ Streamlit App  (app/)
 
 - Python 3.11+
 - A Snowflake account ([free trial](https://signup.snowflake.com/) works)
-- An [Anthropic API key](https://console.anthropic.com/)
+- An [OpenAI API key](https://platform.openai.com/api-keys) (default agent)
+- A [Google AI Studio API key](https://aistudio.google.com) — free, no credit card required (Gemini agent)
+- An [Anthropic API key](https://console.anthropic.com/) (Claude evaluator)
 
 ---
 
@@ -92,11 +95,16 @@ cp .env.example .env
 Snowflake credentials live in `~/.dbt/profiles.yml` (see step 4) — the Python app reads them from there too, so you don't need to duplicate them in `.env`. Only add the non-Snowflake values:
 
 ```bash
-# OpenAI — used by the LangGraph agent
+# Agent — OpenAI (default)
 OPENAI_API_KEY=sk-...
-AGENT_MODEL=gpt-4o
 
-# Anthropic — used by the evaluation scorer
+# Agent — Gemini (free at aistudio.google.com)
+GOOGLE_API_KEY=your-key-here
+
+# Which agent to use: openai | gemini  (overridden by --agent flag at runtime)
+AGENT_NAME=openai
+
+# Anthropic — used by the evaluation scorer (Claude as judge)
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Evaluation config
@@ -200,16 +208,16 @@ After a successful run you should have:
 |---|---|---|
 | `ANALYTICS_DB.STAGING` | `STG_TPCH__ORDERS`, `STG_TPCH__CUSTOMERS`, etc. | Views |
 | `ANALYTICS_DB.MARTS` | `MART_CUSTOMER_SUPPORT_CONTEXT` | Table (~6M rows) |
-| `ANALYTICS_DB.EVALUATION` | `GOLDEN_CUSTOMER_SUPPORT` | Table (4 rows, from seed) |
+| `ANALYTICS_DB.EVALUATION` | `GOLDEN_CUSTOMER_SUPPORT` | Table (10 rows, from seed) |
 
 ---
 
 ## 6. Run the LangGraph agent (Part 2)
 
-The agent queries `MART_CUSTOMER_SUPPORT_CONTEXT` and answers order questions via GPT-4o.
+The agent queries `MART_CUSTOMER_SUPPORT_CONTEXT` and answers order questions. The default provider is OpenAI (`gpt-4o`). Set `AGENT_NAME=gemini` in `.env` to use Gemini instead.
 
 ```bash
-# interactive CLI — type a question and get an answer
+# interactive CLI — uses AGENT_NAME from .env (default: openai)
 python -m src.agent.graph
 ```
 
@@ -225,11 +233,15 @@ Example questions:
 The pipeline runs the agent on every question in the golden test suite, scores each response using Claude as an LLM judge, and writes results to `ANALYTICS_DB.EVALUATION.EVAL_RESULTS`.
 
 ```bash
-# full run — all golden questions
-python -m src.evaluation.pipeline
+# run a single agent
+python -m src.evaluation.pipeline --agent openai
+python -m src.evaluation.pipeline --agent gemini
 
 # smoke test — first N questions only
-python -m src.evaluation.pipeline --limit 2
+python -m src.evaluation.pipeline --agent openai --limit 2
+
+# compare both agents back-to-back
+python -m src.evaluation.pipeline --agent openai && python -m src.evaluation.pipeline --agent gemini
 ```
 
 The pipeline exits 0 if both thresholds are met, 1 otherwise:
@@ -256,8 +268,8 @@ streamlit run app/streamlit_app.py
 
 Opens at `http://localhost:8501` with two pages:
 
-- **Chat** — talk to the agent directly; session history is preserved across messages
-- **Evaluation Dashboard** — pass rate, P90 score, avg score, and a trend chart across all eval runs
+- **Chat** — talk to the agent directly; choose OpenAI or Gemini from the sidebar selector
+- **Evaluation Dashboard** — filter by agent, compare pass rate and P90 score side-by-side across runs
 
 > The dashboard requires at least one completed eval run and the `mart_eval_results_summary` mart to be built (step 7 above).
 
@@ -287,8 +299,9 @@ dbt docs generate && dbt docs serve
 python -m src.agent.graph
 
 # Evaluation pipeline (Part 3)
-python -m src.evaluation.pipeline
-python -m src.evaluation.pipeline --limit 2    # quick smoke test
+python -m src.evaluation.pipeline --agent openai
+python -m src.evaluation.pipeline --agent gemini
+python -m src.evaluation.pipeline --agent openai --limit 2    # quick smoke test
 
 # Streamlit app (Part 3)
 streamlit run app/streamlit_app.py
