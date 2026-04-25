@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 import argparse
 from datetime import datetime, timezone
@@ -88,7 +89,8 @@ def run_evaluation(limit: int | None = None, agent_name: str | None = None) -> d
         _write_result(run_id, name, run_ts, question, agent_response, result, rubric_id)
         scores.append(result["score"])
         passes.append(result["pass"])
-        # TODO: add sleep between questions to avoid gemini rate limit
+        if i < len(suite):
+            time.sleep(4)
 
     pass_rate = sum(passes) / len(passes) if passes else 0.0
     avg_score = sum(scores) / len(scores) if scores else 0.0
