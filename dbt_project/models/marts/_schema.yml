@@ -4,10 +4,47 @@ sources:
   - name: evaluation
     database: ANALYTICS_DB
     schema: EVALUATION
-    description: "Evaluation pipeline outputs."
+    description: "Evaluation pipeline outputs — written by pipeline.py, never by dbt."
+    loaded_at_field: RUN_TIMESTAMP
+    freshness:
+      warn_after: {count: 7, period: day}
     tables:
       - name: eval_results
         description: "One row per question per evaluation run."
+        columns:
+          - name: RUN_ID
+            description: "UUID shared by all rows in one pipeline run."
+            data_tests: [not_null]
+          - name: AGENT_NAME
+            description: "Provider key — openai or gemini."
+            data_tests: [not_null]
+          - name: MODEL_NAME
+            description: "Resolved model string, e.g. gpt-4o or gemini-2.5-flash."
+            data_tests: [not_null]
+          - name: QUESTION
+            description: "The golden-suite question posed to the agent."
+            data_tests: [not_null]
+          - name: ORDER_CONTEXT
+            description: "Raw Snowflake record the agent retrieved, stored as JSON string. Ground truth for the evaluator."
+          - name: AGENT_RESPONSE
+            description: "Full natural-language reply produced by the agent."
+          - name: SCORE
+            description: "Claude's numeric score 0.0–1.0."
+            data_tests: [not_null]
+          - name: REASONING
+            description: "One-sentence Claude verdict."
+            data_tests: [not_null]
+          - name: EVAL_EXPLANATION
+            description: "2–4 sentence breakdown from Claude citing specific order record values."
+          - name: PASS
+            description: "True when score >= 0.75."
+            data_tests: [not_null]
+          - name: RUBRIC_ID
+            description: "Rubric category applied — status_accuracy, shipping_accuracy, etc."
+            data_tests: [not_null]
+          - name: RUN_TIMESTAMP
+            description: "UTC timestamp when the pipeline run started."
+            data_tests: [not_null]
 
 models:
   - name: mart_customer_support_context
