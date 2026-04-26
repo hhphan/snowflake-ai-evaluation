@@ -30,4 +30,4 @@ Respond ONLY with a JSON object — no markdown, no prose, no extra keys:
 A response "passes" when score >= 0.75.
 """
 
-PASS_THRESHOLD = 0.8
+PASS_THRESHOLD = 0.75
