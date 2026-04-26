@@ -92,6 +92,35 @@ else:
             pivot = chart_df.pivot(index="run_timestamp", columns="agent_name", values="pass_rate")
             st.line_chart(pivot)
 
+            # ── Per-question drill-down ──────────────────────────────────────
+            st.divider()
+            st.subheader("Per-Question Detail")
+
+            detail_rows = execute_query(
+                "SELECT * FROM ANALYTICS_DB.EVALUATION.EVAL_RESULTS ORDER BY RUN_TIMESTAMP DESC, QUESTION"
+            )
+            if detail_rows:
+                detail_df = pd.DataFrame(detail_rows)
+                detail_df.columns = [c.lower() for c in detail_df.columns]
+
+                run_options = detail_df["run_timestamp"].astype(str).unique().tolist()
+                selected_run = st.selectbox("Select run to inspect", run_options)
+                run_df = detail_df[detail_df["run_timestamp"].astype(str) == selected_run]
+
+                for _, row in run_df.iterrows():
+                    label = f"{'✅' if row['pass'] else '❌'}  {row['question']}  — score {row['score']:.2f}"
+                    with st.expander(label):
+                        st.markdown(f"**Verdict:** {row['reasoning']}")
+                        st.markdown(f"**Claude's explanation:** {row['eval_explanation']}")
+                        st.divider()
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.markdown("**Order record (ground truth)**")
+                            st.code(row["order_context"] or "—", language="json")
+                        with col_b:
+                            st.markdown("**Agent response**")
+                            st.write(row["agent_response"] or "—")
+
     except Exception as e:
         st.error(f"Could not load evaluation results: {e}")
         st.info("Run `python -m src.evaluation.pipeline` to generate results first.")
