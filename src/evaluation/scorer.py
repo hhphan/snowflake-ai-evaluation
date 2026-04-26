@@ -21,20 +21,24 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-def score_response(question: str, agent_response: str, rubric_id: str) -> dict:
-    """Score one agent response with Claude. Returns dict with score, reasoning, pass."""
+def score_response(question: str, agent_response: str, rubric_id: str,
+                   order_context: str = "") -> dict:
+    """Score one agent response with Claude. Returns dict with score, reasoning, explanation, pass."""
     client = _get_client()
     model = os.environ.get("EVAL_MODEL", "claude-sonnet-4-6")
 
-    user_content = (
-        f"Rubric category: {rubric_id}\n\n"
-        f"Customer question: {question}\n\n"
-        f"Agent response:\n{agent_response}"
-    )
+    parts = [
+        f"Rubric category: {rubric_id}",
+        f"Customer question: {question}",
+    ]
+    if order_context:
+        parts.append(f"Order record (ground truth from database):\n{order_context}")
+    parts.append(f"Agent response:\n{agent_response}")
+    user_content = "\n\n".join(parts)
 
     response = client.messages.create(
         model=model,
-        max_tokens=256,
+        max_tokens=512,
         system=[
             {
                 "type": "text",
@@ -52,9 +56,10 @@ def score_response(question: str, agent_response: str, rubric_id: str) -> dict:
         result = json.loads(raw)
     except json.JSONDecodeError:
         logger.warning("Could not parse scorer JSON: %s", raw)
-        result = {"score": 0.0, "reasoning": raw, "pass": False}
+        result = {"score": 0.0, "reasoning": raw, "explanation": "", "pass": False}
 
     result["score"] = float(result.get("score", 0.0))
+    result["explanation"] = result.get("explanation", "")
     result["pass"] = bool(result.get("pass", result["score"] >= PASS_THRESHOLD))
 
     logger.info(
