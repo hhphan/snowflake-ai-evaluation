@@ -71,17 +71,18 @@ else:
 
             # summary cards for the latest row
             latest = df.iloc[0]
-            c1, c2, c3, c4, c5 = st.columns(5)
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
             c1.metric("Agent", latest["agent_name"])
-            c2.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
-            c3.metric("P90 Score", f"{latest['p90_score']:.2f}")
-            c4.metric("Avg Score", f"{latest['avg_score']:.2f}")
-            c5.metric("Questions", int(latest["total_questions"]))
+            c2.metric("Model", latest["model_name"])
+            c3.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
+            c4.metric("P90 Score", f"{latest['p90_score']:.2f}")
+            c5.metric("Avg Score", f"{latest['avg_score']:.2f}")
+            c6.metric("Questions", int(latest["total_questions"]))
 
             st.divider()
             st.subheader("All Runs")
             st.dataframe(
-                df[["run_timestamp", "agent_name", "total_questions",
+                df[["run_timestamp", "agent_name", "model_name", "total_questions",
                     "pass_rate", "avg_score", "p90_score", "pass_count", "fail_count"]],
                 use_container_width=True,
             )
