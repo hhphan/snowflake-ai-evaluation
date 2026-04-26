@@ -47,6 +47,10 @@ models:
         description: "Agent provider that produced the responses (e.g. openai, gemini)."
         data_tests:
           - not_null
+      - name: model_name
+        description: "Specific model version used (e.g. gpt-4o, gemini-2.5-flash)."
+        data_tests:
+          - not_null
       - name: run_timestamp
         data_tests:
           - not_null
