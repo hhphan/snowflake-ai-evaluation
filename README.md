@@ -98,8 +98,9 @@ Snowflake credentials live in `~/.dbt/profiles.yml` (see step 4) — the Python 
 # Agent — OpenAI (default)
 OPENAI_API_KEY=sk-...
 
-# Agent — Gemini (free at aistudio.google.com)
+# Agent — Gemini (free key at aistudio.google.com/apikey)
 GOOGLE_API_KEY=your-key-here
+GEMINI_MODEL=gemini-2.5-flash       # gemini-2.0-flash deprecated for new users
 
 # Which agent to use: openai | gemini  (overridden by --agent flag at runtime)
 AGENT_NAME=openai
