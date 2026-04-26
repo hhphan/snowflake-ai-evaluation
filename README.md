@@ -92,31 +92,9 @@ If you skip this, use your existing `COMPUTE_WH` and update `SNOWFLAKE_WAREHOUSE
 cp .env.example .env
 ```
 
-Snowflake credentials live in `~/.dbt/profiles.yml` (see step 4) — the Python app reads them from there too, so you don't need to duplicate them in `.env`. Only add the non-Snowflake values:
+Edit `.env` and fill in the keys you need. `.env.example` is organised by part — Part 1 needs no API keys, Part 2 needs at least one of `OPENAI_API_KEY` / `GOOGLE_API_KEY`, Part 3 adds `ANTHROPIC_API_KEY`.
 
-```bash
-# Agent — OpenAI (default)
-OPENAI_API_KEY=sk-...
-
-# Agent — Gemini (free key at aistudio.google.com/apikey)
-GOOGLE_API_KEY=your-key-here
-GEMINI_MODEL=gemini-2.5-flash       # gemini-2.0-flash deprecated for new users
-
-# Which agent to use: openai | gemini  (overridden by --agent flag at runtime)
-AGENT_NAME=openai
-
-# Anthropic — used by the evaluation scorer (Claude as judge)
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Evaluation config
-EVAL_MODEL=claude-sonnet-4-6
-EVAL_SCORE_THRESHOLD=0.75
-EVAL_PASS_RATE_THRESHOLD=0.85
-
-# App
-STREAMLIT_PORT=8501
-LOG_LEVEL=INFO
-```
+Snowflake credentials live in `~/.dbt/profiles.yml` (see step 4) — the Python app reads them from there too, so no Snowflake variables are needed in `.env`.
 
 ---
 
@@ -130,7 +108,32 @@ Both dbt and the Python app (`src/utils/snowflake_client.py`) read Snowflake cre
 cp dbt_project/profiles.yml.example ~/.dbt/profiles.yml
 ```
 
-Then edit `~/.dbt/profiles.yml` and fill in your Snowflake credentials:
+Then edit `~/.dbt/profiles.yml` and fill in your Snowflake credentials.
+
+This project uses **RSA key-pair authentication** — no password is stored anywhere. Generate your key pair once:
+
+```powershell
+# Windows PowerShell
+openssl genrsa -out "$env:USERPROFILE\.ssh\snowflake_rsa_key_raw.pem" 2048
+openssl pkcs8 -topk8 -inform PEM -in "$env:USERPROFILE\.ssh\snowflake_rsa_key_raw.pem" -out "$env:USERPROFILE\.ssh\snowflake_rsa_key.p8" -nocrypt
+openssl rsa -in "$env:USERPROFILE\.ssh\snowflake_rsa_key.p8" -pubout -out "$env:USERPROFILE\.ssh\snowflake_rsa_key.pub"
+# Print the public key — paste it into the ALTER USER statement below
+(Get-Content "$env:USERPROFILE\.ssh\snowflake_rsa_key.pub" | Where-Object { $_ -notmatch "PUBLIC KEY" }) -join ""
+```
+
+```bash
+# macOS / Linux
+openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt -out ~/.ssh/snowflake_rsa_key.p8
+openssl rsa -in ~/.ssh/snowflake_rsa_key.p8 -pubout | grep -v "PUBLIC KEY" | tr -d '\n'
+```
+
+Register the public key in Snowflake (run once in a worksheet):
+
+```sql
+ALTER USER your_username SET RSA_PUBLIC_KEY='<paste public key here>';
+```
+
+Then set up `~/.dbt/profiles.yml`:
 
 ```yaml
 snowflake_ai_evaluation:
@@ -140,11 +143,11 @@ snowflake_ai_evaluation:
       type: snowflake
       account: your_org-your_account    # e.g. abc12345.us-east-1
       user: your_username
-      password: your_password
+      private_key_path: ~/.ssh/snowflake_rsa_key.p8
       role: ACCOUNTADMIN
       database: ANALYTICS_DB
       warehouse: TRANSFORM_WH           # or COMPUTE_WH
-      schema: PUBLIC
+      schema: STAGING
       threads: 4
 ```
 
@@ -270,7 +273,7 @@ streamlit run app/streamlit_app.py
 Opens at `http://localhost:8501` with two pages:
 
 - **Chat** — talk to the agent directly; choose OpenAI or Gemini from the sidebar selector
-- **Evaluation Dashboard** — filter by agent, compare pass rate and P90 score side-by-side across runs
+- **Evaluation Dashboard** — filter by agent, compare pass rate and P90 score across runs; expand any question to see the raw order record, the agent's answer, and Claude's explanation of the score
 
 > The dashboard requires at least one completed eval run and the `mart_eval_results_summary` mart to be built (step 7 above).
 
