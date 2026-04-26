@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from src.evaluation.golden_suite import load_golden_suite, run_agent_on_question
 from src.evaluation.scorer import score_response
-from src.agent.registry import AGENT_REGISTRY, DEFAULT_AGENT
+from src.agent.registry import AGENT_REGISTRY, DEFAULT_AGENT, get_model_name, get_model_name
 from src.utils.snowflake_client import get_connection
 from src.utils.logger import get_logger
 
@@ -17,14 +17,15 @@ logger = get_logger(__name__)
 
 _WRITE_SQL = """
 INSERT INTO ANALYTICS_DB.EVALUATION.EVAL_RESULTS
-    (RUN_ID, AGENT_NAME, QUESTION, AGENT_RESPONSE, SCORE, REASONING, PASS, RUBRIC_ID, RUN_TIMESTAMP)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    (RUN_ID, AGENT_NAME, MODEL_NAME, QUESTION, AGENT_RESPONSE, SCORE, REASONING, PASS, RUBRIC_ID, RUN_TIMESTAMP)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
 _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS ANALYTICS_DB.EVALUATION.EVAL_RESULTS (
     RUN_ID          VARCHAR         NOT NULL,
     AGENT_NAME      VARCHAR         NOT NULL DEFAULT 'openai',
+    MODEL_NAME      VARCHAR         NOT NULL,
     QUESTION        VARCHAR         NOT NULL,
     AGENT_RESPONSE  VARCHAR         NOT NULL,
     SCORE           FLOAT           NOT NULL,
@@ -42,13 +43,14 @@ def _ensure_table() -> None:
         cur.execute(_CREATE_TABLE_SQL)
 
 
-def _write_result(run_id: str, agent_name: str, run_ts: datetime, question: str,
-                  agent_response: str, score_result: dict, rubric_id: str) -> None:
+def _write_result(run_id: str, agent_name: str, model_name: str, run_ts: datetime,
+                  question: str, agent_response: str, score_result: dict, rubric_id: str) -> None:
     conn = get_connection()
     with conn.cursor() as cur:
         cur.execute(_WRITE_SQL, (
             run_id,
             agent_name,
+            model_name,
             question,
             agent_response,
             score_result["score"],
@@ -66,6 +68,7 @@ def run_evaluation(limit: int | None = None, agent_name: str | None = None) -> d
     name = agent_name or os.getenv("AGENT_NAME", DEFAULT_AGENT)
     if name not in AGENT_REGISTRY:
         raise ValueError(f"Unknown agent: {name!r}. Available: {list(AGENT_REGISTRY)}")
+    model = get_model_name(name)
 
     run_id = str(uuid.uuid4())
     run_ts = datetime.now(timezone.utc)
@@ -86,7 +89,7 @@ def run_evaluation(limit: int | None = None, agent_name: str | None = None) -> d
         agent_response = run_agent_on_question(question, name)
         result = score_response(question, agent_response, rubric_id)
 
-        _write_result(run_id, name, run_ts, question, agent_response, result, rubric_id)
+        _write_result(run_id, name, model, run_ts, question, agent_response, result, rubric_id)
         scores.append(result["score"])
         passes.append(result["pass"])
         if i < len(suite):
