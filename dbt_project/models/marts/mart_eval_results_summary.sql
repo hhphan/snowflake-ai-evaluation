@@ -6,6 +6,7 @@ with eval_results as (
 select
     run_id,
     agent_name,
+    model_name,
     run_timestamp,
     count(*)                                                     as total_questions,
     sum(case when pass then 1 else 0 end)                        as pass_count,
@@ -14,5 +15,5 @@ select
     round(avg(score), 4)                                         as avg_score,
     round(percentile_cont(0.9) within group (order by score), 4) as p90_score
 from eval_results
-group by run_id, agent_name, run_timestamp
+group by run_id, agent_name, model_name, run_timestamp
 order by run_timestamp desc
