@@ -24,3 +24,12 @@ AGENT_REGISTRY: dict[str, callable] = {
 }
 
 DEFAULT_AGENT = "openai"
+
+
+def get_model_name(agent_name: str) -> str:
+    """Return the resolved model name for the given agent (reads env vars)."""
+    if agent_name == "openai":
+        return os.getenv("OPENAI_MODEL", "gpt-4o")
+    if agent_name == "gemini":
+        return os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    return agent_name
