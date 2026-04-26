@@ -11,10 +11,15 @@ st.set_page_config(page_title="Snowflake AI Evaluation", layout="wide")
 
 page = st.sidebar.radio("Navigation", ["Chat", "Evaluation Dashboard"])
 
-# chat page
+# ── Chat page ──────────────────────────────────────────────────────────────────
 if page == "Chat":
     st.title("Customer Support Agent")
     st.caption("Ask questions about orders — e.g. 'What is the status of order 1?'")
+
+    from src.agent.registry import AGENT_REGISTRY
+    agent_choice = st.sidebar.selectbox(
+        "Agent", options=list(AGENT_REGISTRY.keys()), index=0
+    )
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -29,15 +34,17 @@ if page == "Chat":
             st.write(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Looking up order details..."):
-                from src.agent.graph import app
-                result = app.invoke({"messages": [HumanMessage(content=prompt)]})
+            with st.spinner(f"[{agent_choice}] Looking up order details..."):
+                from src.agent.graph import build_graph
+                result = build_graph(agent_choice).invoke(
+                    {"messages": [HumanMessage(content=prompt)]}
+                )
                 answer = result["messages"][-1].content
             st.write(answer)
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
 
-# eval dashboard
+# ── Evaluation Dashboard ───────────────────────────────────────────────────────
 else:
     st.title("Evaluation Dashboard")
     st.caption("Golden suite pass/fail results by evaluation run.")
@@ -56,24 +63,63 @@ else:
             df = pd.DataFrame(rows)
             df.columns = [c.lower() for c in df.columns]
 
-            # Summary cards for the latest run
+            # agent filter
+            agents = sorted(df["agent_name"].unique())
+            selected_agent = st.sidebar.selectbox("Filter by agent", ["All"] + agents)
+            if selected_agent != "All":
+                df = df[df["agent_name"] == selected_agent]
+
+            # summary cards for the latest row
             latest = df.iloc[0]
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
-            c2.metric("P90 Score", f"{latest['p90_score']:.2f}")
-            c3.metric("Avg Score", f"{latest['avg_score']:.2f}")
-            c4.metric("Questions", int(latest["total_questions"]))
+            c1, c2, c3, c4, c5, c6 = st.columns(6)
+            c1.metric("Agent", latest["agent_name"])
+            c2.metric("Model", latest["model_name"])
+            c3.metric("Pass Rate", f"{latest['pass_rate']:.0%}")
+            c4.metric("P90 Score", f"{latest['p90_score']:.2f}")
+            c5.metric("Avg Score", f"{latest['avg_score']:.2f}")
+            c6.metric("Questions", int(latest["total_questions"]))
 
             st.divider()
             st.subheader("All Runs")
             st.dataframe(
-                df[["run_timestamp", "total_questions", "pass_rate", "avg_score", "p90_score", "pass_count", "fail_count"]],
+                df[["run_timestamp", "agent_name", "model_name", "total_questions",
+                    "pass_rate", "avg_score", "p90_score", "pass_count", "fail_count"]],
                 use_container_width=True,
             )
 
             st.subheader("Pass Rate Over Time")
-            chart_df = df[["run_timestamp", "pass_rate"]].sort_values("run_timestamp")
-            st.line_chart(chart_df.set_index("run_timestamp")["pass_rate"])
+            chart_df = df[["run_timestamp", "agent_name", "pass_rate"]].sort_values("run_timestamp")
+            pivot = chart_df.pivot(index="run_timestamp", columns="agent_name", values="pass_rate")
+            st.line_chart(pivot)
+
+            # ── Per-question drill-down ──────────────────────────────────────
+            st.divider()
+            st.subheader("Per-Question Detail")
+
+            detail_rows = execute_query(
+                "SELECT * FROM ANALYTICS_DB.EVALUATION.EVAL_RESULTS ORDER BY RUN_TIMESTAMP DESC, QUESTION"
+            )
+            if detail_rows:
+                detail_df = pd.DataFrame(detail_rows)
+                detail_df.columns = [c.lower() for c in detail_df.columns]
+
+                run_options = detail_df["run_timestamp"].astype(str).unique().tolist()
+                selected_run = st.selectbox("Select run to inspect", run_options)
+                run_df = detail_df[detail_df["run_timestamp"].astype(str) == selected_run]
+
+                for _, row in run_df.iterrows():
+                    label = f"{'✅' if row['pass'] else '❌'}  {row['question']}  — score {row['score']:.2f}"
+                    with st.expander(label):
+                        st.markdown(f"**Verdict:** {row['reasoning']}")
+                        st.markdown(f"**Claude's explanation:** {row['eval_explanation']}")
+                        st.divider()
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.markdown("**Order record (ground truth)**")
+                            st.code(row["order_context"] or "—", language="json")
+                        with col_b:
+                            st.markdown("**Agent response**")
+                            st.write(row["agent_response"] or "—")
 
     except Exception as e:
         st.error(f"Could not load evaluation results: {e}")

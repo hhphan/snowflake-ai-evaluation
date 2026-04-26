@@ -3,17 +3,22 @@ import re
 import warnings
 import yaml
 
+# Suppress the urllib3 version mismatch warning that snowflake.connector emits at
+# import time. Must be registered BEFORE the import or it has no effect — which is
+# why these imports sit below a non-import statement and need noqa: E402.
+# Ref: https://docs.python.org/3/library/warnings.html#warnings.filterwarnings
+# Ref: https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file/ (E402)
 warnings.filterwarnings(
     "ignore",
     message=".*doesn't match a supported version",
     category=Warning,
 )
 
-import snowflake.connector
-from pathlib import Path
-from snowflake.connector import SnowflakeConnection
-from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PrivateFormat, NoEncryption
-from src.utils.logger import get_logger
+import snowflake.connector  # noqa: E402
+from pathlib import Path  # noqa: E402
+from snowflake.connector import SnowflakeConnection  # noqa: E402
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, Encoding, PrivateFormat, NoEncryption  # noqa: E402
+from src.utils.logger import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 

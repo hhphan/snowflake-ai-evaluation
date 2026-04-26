@@ -1,4 +1,6 @@
-from langchain_core.messages import HumanMessage
+import json
+
+from langchain_core.messages import HumanMessage, ToolMessage
 
 from src.utils.snowflake_client import execute_query
 from src.utils.logger import get_logger
@@ -26,9 +28,24 @@ def load_golden_suite() -> list[dict]:
     ]
 
 
-def run_agent_on_question(question: str) -> str:
-    """Run the LangGraph agent on a single question and return its final text response."""
-    from src.agent.graph import app
+def run_agent_on_question(question: str, agent_name: str | None = None) -> tuple[str, str]:
+    """Run the LangGraph agent on a single question.
 
-    result = app.invoke({"messages": [HumanMessage(content=question)]})
-    return result["messages"][-1].content
+    Returns (agent_response, order_context) where order_context is the raw Snowflake
+    record the agent retrieved, serialised as a JSON string (empty string if no tool call).
+    """
+    from src.agent.graph import build_graph
+
+    graph = build_graph(agent_name)
+    result = graph.invoke({"messages": [HumanMessage(content=question)]})
+
+    agent_response = result["messages"][-1].content
+
+    tool_msgs = [m for m in result["messages"] if isinstance(m, ToolMessage)]
+    if tool_msgs:
+        raw = tool_msgs[0].content
+        order_context = raw if isinstance(raw, str) else json.dumps(raw, default=str)
+    else:
+        order_context = ""
+
+    return agent_response, order_context
