@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from src.evaluation.golden_suite import load_golden_suite, run_agent_on_question
 from src.evaluation.scorer import score_response
-from src.agent.registry import AGENT_REGISTRY, DEFAULT_AGENT, get_model_name, get_model_name
+from src.agent.registry import AGENT_REGISTRY, DEFAULT_AGENT, get_model_name
 from src.utils.snowflake_client import get_connection
 from src.utils.logger import get_logger
 
@@ -17,22 +17,25 @@ logger = get_logger(__name__)
 
 _WRITE_SQL = """
 INSERT INTO ANALYTICS_DB.EVALUATION.EVAL_RESULTS
-    (RUN_ID, AGENT_NAME, MODEL_NAME, QUESTION, AGENT_RESPONSE, SCORE, REASONING, PASS, RUBRIC_ID, RUN_TIMESTAMP)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    (RUN_ID, AGENT_NAME, MODEL_NAME, QUESTION, ORDER_CONTEXT, AGENT_RESPONSE,
+     SCORE, REASONING, EVAL_EXPLANATION, PASS, RUBRIC_ID, RUN_TIMESTAMP)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 """
 
 _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS ANALYTICS_DB.EVALUATION.EVAL_RESULTS (
-    RUN_ID          VARCHAR         NOT NULL,
-    AGENT_NAME      VARCHAR         NOT NULL DEFAULT 'openai',
-    MODEL_NAME      VARCHAR         NOT NULL,
-    QUESTION        VARCHAR         NOT NULL,
-    AGENT_RESPONSE  VARCHAR         NOT NULL,
-    SCORE           FLOAT           NOT NULL,
-    REASONING       VARCHAR         NOT NULL,
-    PASS            BOOLEAN         NOT NULL,
-    RUBRIC_ID       VARCHAR         NOT NULL,
-    RUN_TIMESTAMP   TIMESTAMP_NTZ   NOT NULL
+    RUN_ID           VARCHAR         NOT NULL,
+    AGENT_NAME       VARCHAR         NOT NULL DEFAULT 'openai',
+    MODEL_NAME       VARCHAR         NOT NULL,
+    QUESTION         VARCHAR         NOT NULL,
+    ORDER_CONTEXT    VARCHAR,
+    AGENT_RESPONSE   VARCHAR         NOT NULL,
+    SCORE            FLOAT           NOT NULL,
+    REASONING        VARCHAR         NOT NULL,
+    EVAL_EXPLANATION VARCHAR,
+    PASS             BOOLEAN         NOT NULL,
+    RUBRIC_ID        VARCHAR         NOT NULL,
+    RUN_TIMESTAMP    TIMESTAMP_NTZ   NOT NULL
 )
 """
 
@@ -44,7 +47,8 @@ def _ensure_table() -> None:
 
 
 def _write_result(run_id: str, agent_name: str, model_name: str, run_ts: datetime,
-                  question: str, agent_response: str, score_result: dict, rubric_id: str) -> None:
+                  question: str, order_context: str, agent_response: str,
+                  score_result: dict, rubric_id: str) -> None:
     conn = get_connection()
     with conn.cursor() as cur:
         cur.execute(_WRITE_SQL, (
@@ -52,9 +56,11 @@ def _write_result(run_id: str, agent_name: str, model_name: str, run_ts: datetim
             agent_name,
             model_name,
             question,
+            order_context,
             agent_response,
             score_result["score"],
             score_result["reasoning"],
+            score_result.get("explanation", ""),
             score_result["pass"],
             rubric_id,
             run_ts,
@@ -86,10 +92,10 @@ def run_evaluation(limit: int | None = None, agent_name: str | None = None) -> d
         rubric_id = case["rubric_id"]
         logger.info("[%d/%d] agent=%s | %s", i, len(suite), name, question)
 
-        agent_response = run_agent_on_question(question, name)
-        result = score_response(question, agent_response, rubric_id)
+        agent_response, order_context = run_agent_on_question(question, name)
+        result = score_response(question, agent_response, rubric_id, order_context)
 
-        _write_result(run_id, name, model, run_ts, question, agent_response, result, rubric_id)
+        _write_result(run_id, name, model, run_ts, question, order_context, agent_response, result, rubric_id)
         scores.append(result["score"])
         passes.append(result["pass"])
         if i < len(suite):
