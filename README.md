@@ -32,6 +32,19 @@ Streamlit App  (app/)
 
 ---
 
+## Results
+
+Ran both agents against a 10-question golden test suite, scored by Claude as LLM judge:
+
+| Agent | Score | Pass rate |
+|---|---|---|
+| GPT-4o | 9/10 | 90% |
+| Gemini 2.5 Flash | 10/10 | 100% |
+
+The one failure (GPT-4o on Order 6) traced back to a missing `NATION` join in the mart — not model quality. The evaluation pipeline surfaces exactly that kind of root cause.
+
+---
+
 ## Prerequisites
 
 - Python 3.11+
@@ -194,7 +207,7 @@ This installs `dbt_utils` declared in `packages.yml`.
 cd dbt_project
 
 # seed + run + test in one command
-# mart_eval_results_summary is excluded — it needs the evaluation pipeline (Part 2) first
+# mart_eval_results_summary is excluded — it needs the evaluation pipeline (Part 3) first
 dbt build --exclude mart_eval_results_summary
 ```
 
