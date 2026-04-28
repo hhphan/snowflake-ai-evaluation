@@ -2,6 +2,8 @@
 
 An end-to-end AI agent evaluation pipeline using Snowflake TPC-H data, dbt, LangGraph, and the Claude API. Demonstrates how to build trustworthy evaluation pipelines for LLM-powered agents.
 
+Details info about this project: https://tronghien.com/blog/evaluating-ai-agents
+
 **Stack:** dbt · Snowflake · LangGraph · OpenAI API (agent) · Gemini API (agent) · Claude API (evaluator) · Streamlit · Python 3.11+
 
 ---
